@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import './App.css';
 import SignUp from './SignUp';
+import MainCalendar from './MainCalendar';
 
 function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [currentPage, setCurrentPage] = useState('login');
+  console.log('Current page state is:', currentPage);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log('Login attempt:', { email, password });
-    setCurrentPage('calendar');
-  };
+  e.preventDefault();
+  console.log('Login attempt:', { email, password });
+  console.log('BEFORE setCurrentPage, currentPage is:', currentPage);
+  setCurrentPage('calendar');
+  console.log('AFTER setCurrentPage, trying to set to: calendar');
+};
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
@@ -42,15 +46,7 @@ function App() {
   }
 
   if (currentPage === 'calendar') {
-    return (
-      <div style={{background: 'green', padding: '50px', color: 'white', minHeight: '100vh'}}>
-        <h1>✅ SUCCESS! Calendar Page Works!</h1>
-        <p>You successfully logged in!</p>
-        <button onClick={handleLogout} style={{padding: '10px 20px', fontSize: '16px'}}>
-          Back to Login
-        </button>
-      </div>
-    );
+    return <MainCalendar onLogout={handleLogout} />;
   }
 
   return (
