@@ -2,21 +2,21 @@ import React, { useState } from 'react';
 import './App.css';
 import SignUp from './SignUp';
 import MainCalendar from './MainCalendar';
+import BrowsePage from './BrowsePage';
+import VenuesPage from './VenuesPage';
+import OrganizationsPage from './OrganizationsPage';
 
 function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [currentPage, setCurrentPage] = useState('login');
-  console.log('Current page state is:', currentPage);
 
   const handleSubmit = (e) => {
-  e.preventDefault();
-  console.log('Login attempt:', { email, password });
-  console.log('BEFORE setCurrentPage, currentPage is:', currentPage);
-  setCurrentPage('calendar');
-  console.log('AFTER setCurrentPage, trying to set to: calendar');
-};
+    e.preventDefault();
+    console.log('Login attempt:', { email, password });
+    setCurrentPage('calendar');
+  };
 
   const handleForgotPassword = (e) => {
     e.preventDefault();

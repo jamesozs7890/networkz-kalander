@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './MainCalendar.css';
 
-function MainCalendar({ onLogout }) {
+function MainCalendar({ onLogout, onNavigate }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 5, 3)); // June 3, 2025
