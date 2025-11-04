@@ -11,6 +11,7 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const handleSubmit = (e) => {
@@ -31,7 +32,17 @@ function App() {
     setEmail('');
     setPassword('');
     setShowForgotPassword(false);
+    setShowSignUp(false);
   };
+
+  const handleBackToLogin = () => {
+    setShowSignUp(false);
+    setShowForgotPassword(false);
+  };
+
+  if (showSignUp) {
+    return <SignUp onBackToLogin={handleBackToLogin} />;
+  }
 
   if (!isAuthenticated) {
     return (
@@ -83,7 +94,7 @@ function App() {
                   <button 
                     type="button" 
                     className="signup-btn"
-                    onClick={() => setIsAuthenticated(true)}
+                    onClick={() => setShowSignUp(true)}
                   >
                     Sign Up
                   </button>
