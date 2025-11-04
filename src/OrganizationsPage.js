@@ -1,11 +1,8 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './BrowsePage.css';
-import './MainCalendar.js';
-import './BrowsePage.js';
-import './VenuesPage.js';
 
-
-function OrganizationsPage({ onLogout, onNavigate }) {
+function OrganizationsPage({ onLogout }) {
   const organizations = [
     {
       id: 1,
@@ -58,10 +55,10 @@ function OrganizationsPage({ onLogout, onNavigate }) {
         <div className="nav-content">
           <h1 className="nav-logo">CityEvents</h1>
           <div className="nav-links">
-            <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); onNavigate('calendar'); }}>Calendar</a>
-            <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); onNavigate('browse'); }}>Browse</a>
-            <a href="#" className="nav-link" onClick={(e) => { e.preventDefault(); onNavigate('venues'); }}>Venues</a>
-            <a href="#" className="nav-link active">Organizations</a>
+            <Link to="/calendar" className="nav-link">Calendar</Link>
+            <Link to="/browse" className="nav-link">Browse</Link>
+            <Link to="/venues" className="nav-link">Venues</Link>
+            <Link to="/organizations" className="nav-link active">Organizations</Link>
           </div>
           <button className="nav-logout" onClick={onLogout}>Logout</button>
         </div>

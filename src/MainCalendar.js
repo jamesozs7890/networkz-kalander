@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import './MainCalendar.css';
 
-function MainCalendar({ onLogout, onNavigate }) {
+function MainCalendar({ onLogout }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 5, 3)); // June 3, 2025
@@ -143,10 +144,10 @@ function MainCalendar({ onLogout, onNavigate }) {
         <div className="nav-content">
           <h1 className="nav-logo">CityEvents</h1>
           <div className="nav-links">
-            <a href="#" className="nav-link active">Calendar</a>
-            <a href="#" className="nav-link">Browse</a>
-            <a href="#" className="nav-link">Venues</a>
-            <a href="#" className="nav-link">Organizations</a>
+            <Link to="/calendar" className="nav-link active">Calendar</Link>
+            <Link to="/browse" className="nav-link">Browse</Link>
+            <Link to="/venues" className="nav-link">Venues</Link>
+            <Link to="/organizations" className="nav-link">Organizations</Link>
           </div>
           <button className="nav-logout" onClick={onLogout}>Logout</button>
         </div>
