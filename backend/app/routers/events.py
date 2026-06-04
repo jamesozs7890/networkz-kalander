@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 
 from app.db.session import get_db
 from app.models.category import Category
@@ -47,13 +48,22 @@ def public_events(
     db: Session = Depends(get_db),
     limit: int = Query(default=100, ge=1, le=500),
     upcoming_only: bool = True,
+    q: str | None = Query(default=None, alias="q")
 ):
     query = db.query(Event).filter(Event.is_published.is_(True))
     if upcoming_only:
         from datetime import datetime
         query = query.filter(Event.start_time >= datetime.now())
+    if q:
+        query = query.filter(
+            or_(
+                Event.title.ilike(f"%{q}%"),
+                Event.description.ilike(f"%{q}%")
+            )
+        )
     events = query.order_by(Event.start_time.asc()).limit(limit).all()
     return [_to_joined(event) for event in events]
+
 
 
 @router.get("", response_model=list[EventJoinedResponse])
@@ -61,8 +71,17 @@ def all_events(
     db: Session = Depends(get_db),
     _: AppUser = Depends(require_admin),
     limit: int = Query(default=200, ge=1, le=1000),
+    q: str | None = Query(default=None, alias="q")
 ):
-    events = db.query(Event).order_by(Event.start_time.asc()).limit(limit).all()
+    query = db.query(Event).order_by(Event.start_time.asc())
+    if q:
+        query = query.filter(
+            or_(
+                Event.title.ilike(f"%{q}%"),
+                Event.description.ilike(f"%{q}%")
+            )
+        )
+    events = query.order_by(Event.start_time.asc()).limit(limit).all()
     return [_to_joined(event) for event in events]
 
 
@@ -132,3 +151,4 @@ def delete_event(event_id: int, db: Session = Depends(get_db), _: AppUser = Depe
     db.delete(event)
     db.commit()
     return None
+

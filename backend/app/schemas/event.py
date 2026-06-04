@@ -77,3 +77,4 @@ class EventJoinedResponse(BaseModel):
 class SimpleLookup(BaseModel):
     id: int
     name: str
+    source_url: str | None = None
