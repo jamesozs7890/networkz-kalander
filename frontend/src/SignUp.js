@@ -16,6 +16,7 @@ function SignUp({ onBackToLogin }) {
   });
 
   const [errors, setErrors] = useState({});
+  const [formError, setFormError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const API_BASE = 'http://127.0.0.1:8000';
@@ -41,24 +42,34 @@ function SignUp({ onBackToLogin }) {
 
     if (!formData.businessName.trim()) {
       newErrors.businessName = 'Username or business name is required';
+    } else if (formData.businessName.trim().length < 2) {
+      newErrors.businessName = 'Must be at least 2 characters';
     }
 
     if (!formData.businessEmail.trim()) {
       newErrors.businessEmail = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.businessEmail)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.businessEmail)) {
       newErrors.businessEmail = 'Please enter a valid email';
     }
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 3) {
-      newErrors.password = 'Password must be at least 3 characters';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    } else if (!/[A-Z]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter';
+    } else if (!/[0-9]/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one number';
     }
 
     if (!formData.confirmPassword) {
       newErrors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (formData.vatNumber.trim() && !/^[A-Z]{2}[0-9A-Z]{2,12}$/.test(formData.vatNumber.trim())) {
+      newErrors.vatNumber = 'Invalid VAT number format (e.g. DE123456789)';
     }
 
     if (!formData.businessNumber.trim()) {
@@ -75,6 +86,8 @@ function SignUp({ onBackToLogin }) {
 
     if (!formData.postalCode.trim()) {
       newErrors.postalCode = 'Postal code is required';
+    } else if (!/^\d{4,5}$/.test(formData.postalCode.trim())) {
+      newErrors.postalCode = 'Postal code must be 4–5 digits';
     }
 
     if (!formData.country.trim()) {
@@ -87,6 +100,7 @@ function SignUp({ onBackToLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
 
     if (!validateForm()) return;
 
@@ -111,11 +125,10 @@ function SignUp({ onBackToLogin }) {
         throw new Error(data.detail || 'Registration failed');
       }
 
-      alert('Account created successfully. Please sign in.');
       onBackToLogin();
     } catch (err) {
       console.error('Registration error:', err);
-      alert(err.message || 'Registration failed');
+      setFormError(err.message || 'Registration failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -128,6 +141,8 @@ function SignUp({ onBackToLogin }) {
         <h2 className="signup-title">Create Account</h2>
 
         <form onSubmit={handleSubmit} className="signup-form">
+          {formError && <div className="form-error-banner">{formError}</div>}
+
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="businessName">Username / Business Name *</label>
@@ -200,7 +215,9 @@ function SignUp({ onBackToLogin }) {
                 value={formData.vatNumber}
                 onChange={handleInputChange}
                 placeholder="DE123456789"
+                className={errors.vatNumber ? 'error' : ''}
               />
+              {errors.vatNumber && <span className="error-text">{errors.vatNumber}</span>}
             </div>
 
             <div className="form-group">

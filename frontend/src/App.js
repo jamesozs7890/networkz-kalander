@@ -14,6 +14,8 @@ const API_BASE = 'http://127.0.0.1:8000';
 function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginErrors, setLoginErrors] = useState({});
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
@@ -56,8 +58,20 @@ function App() {
     fetchMe();
   }, []);
 
+  const validateLogin = () => {
+    const errs = {};
+    if (!email.trim()) errs.email = 'Email or username is required';
+    if (!password) errs.password = 'Password is required';
+    setLoginErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateLogin()) return;
+
+    setIsLoggingIn(true);
+    setLoginErrors({});
 
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -82,7 +96,9 @@ function App() {
       await fetchMe();
     } catch (err) {
       console.error('Login error:', err);
-      alert(err.message || 'Login failed');
+      setLoginErrors({ form: err.message || 'Login failed' });
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -124,16 +140,24 @@ function App() {
 
             {!showForgotPassword ? (
               <form onSubmit={handleSubmit} className="login-form">
+                {loginErrors.form && (
+                  <div className="form-error-banner">{loginErrors.form}</div>
+                )}
+
                 <div className="form-group">
                   <label htmlFor="email">Email or Username</label>
                   <input
                     type="text"
                     id="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (loginErrors.email) setLoginErrors((p) => ({ ...p, email: '' }));
+                    }}
                     placeholder="Enter your email or username"
+                    className={loginErrors.email ? 'error' : ''}
                   />
+                  {loginErrors.email && <span className="error-text">{loginErrors.email}</span>}
                 </div>
 
                 <div className="form-group">
@@ -142,14 +166,18 @@ function App() {
                     type="password"
                     id="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (loginErrors.password) setLoginErrors((p) => ({ ...p, password: '' }));
+                    }}
                     placeholder="Enter your password"
+                    className={loginErrors.password ? 'error' : ''}
                   />
+                  {loginErrors.password && <span className="error-text">{loginErrors.password}</span>}
                 </div>
 
-                <button type="submit" className="login-btn">
-                  Sign In
+                <button type="submit" className="login-btn" disabled={isLoggingIn}>
+                  {isLoggingIn ? 'Signing In...' : 'Sign In'}
                 </button>
 
                 <button
