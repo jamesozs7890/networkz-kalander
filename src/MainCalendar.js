@@ -5,10 +5,12 @@ import './MainCalendar.css';
 function MainCalendar({ onLogout }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState(new Date(2025, 5, 3)); // June 3, 2025
-  const [currentMonth, setCurrentMonth] = useState(new Date(2025, 5, 1));
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [loadedCsvFiles, setLoadedCsvFiles] = useState([]);
+  const [importedEventCount, setImportedEventCount] = useState(0);
 
-  const sampleEvents = [
+  const [events, setEvents] = useState([
     {
       id: 1,
       title: 'Summer Jazz Festival',
@@ -75,10 +77,11 @@ function MainCalendar({ onLogout }) {
       description: '5K, 10K, and half marathon',
       image: '🏃'
     }
-  ];
+  ]);
 
   const categories = [
     { id: 'all', name: 'All Events' },
+    { id: 'imported', name: 'Imported' },
     { id: 'music', name: 'Music' },
     { id: 'arts', name: 'Arts & Culture' },
     { id: 'food', name: 'Food & Drink' },
@@ -86,6 +89,142 @@ function MainCalendar({ onLogout }) {
     { id: 'community', name: 'Community' },
     { id: 'business', name: 'Business' }
   ];
+
+  const normalizeCsvDate = (csvDate) => {
+    const value = String(csvDate).replace(/\u200b/g, '').replace(/\uFEFF/g, '').trim();
+    if (!value) return '';
+
+    const germanMonths = {
+      januar: 'January', jan: 'January', februar: 'February', feb: 'February',
+      märz: 'March', maerz: 'March', marz: 'March', april: 'April', mai: 'May',
+      juni: 'June', juli: 'July', august: 'August', september: 'September',
+      okt: 'October', oktober: 'October', november: 'November', dezember: 'December'
+    };
+
+    const replaceGermanMonth = (text) => {
+      return text.replace(/\b([A-Za-zÄÖÜäöüß]+)\b/g, (match) => {
+        const lower = match.toLowerCase();
+        return germanMonths[lower] || match;
+      });
+    };
+
+    const dateOnlyMatch = value.match(/^(\d{1,2})\s*[.\-/]\s*(\d{1,2})\s*[.\-/]\s*(\d{4})/);
+    if (dateOnlyMatch) {
+      const [, day, month, year] = dateOnlyMatch;
+      return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    }
+
+    let cleaned = value.replace(/^[A-Za-zÄÖÜäöüß]+\.?\s*,?\s*/i, '');
+    cleaned = cleaned.replace(/,/g, ' ').replace(/\s+/g, ' ').trim();
+    cleaned = replaceGermanMonth(cleaned);
+
+    const parsedDate = new Date(cleaned);
+    if (!Number.isNaN(parsedDate.valueOf())) {
+      return parsedDate.toISOString().slice(0, 10);
+    }
+
+    const isoMatch = cleaned.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    }
+
+    return '';
+  };
+
+  const parseCsvLine = (line) => {
+    const cells = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i += 1) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i += 1;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        cells.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+
+    cells.push(current);
+    return cells;
+  };
+
+  const parseCsv = (csvText) => {
+    const cleanedText = csvText.replace(/^\uFEFF/, '').trim();
+    const lines = cleanedText.split(/\r?\n/).filter((line) => line.trim().length > 0);
+    if (lines.length <= 1) return [];
+
+    const header = parseCsvLine(lines[0]).map((col) => col.trim().toLowerCase());
+    const dateIndex = header.findIndex((col) => col.includes('date'));
+    const titleIndex = header.findIndex((col) => col.includes('title'));
+    const timeIndex = header.findIndex((col) => col.includes('time'));
+    const urlIndex = header.findIndex((col) => col.includes('url'));
+
+    return lines.slice(1).map((line, index) => {
+      const cells = parseCsvLine(line);
+      const rawDate = cells[dateIndex] || '';
+      const rawTitle = cells[titleIndex] || '';
+      const rawTime = timeIndex >= 0 ? cells[timeIndex] || '' : '';
+      const rawUrl = urlIndex >= 0 ? cells[urlIndex] || '' : '';
+
+      return {
+        id: Date.now() + index,
+        title: rawTitle.trim() || 'Untitled Event',
+        organization: 'Imported event',
+        date: normalizeCsvDate(rawDate),
+        time: rawTime.trim(),
+        location: '',
+        category: 'imported',
+        description: '',
+        image: '📌',
+        url: rawUrl.trim()
+      };
+    }).filter((event) => event.date && event.title);
+  };
+
+  const readCsvFile = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target.result;
+        const importedEvents = parseCsv(text);
+        resolve(importedEvents);
+      };
+      reader.onerror = () => reject(new Error(`Failed to read ${file.name}`));
+      reader.readAsText(file, 'UTF-8');
+    });
+  };
+
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      const importedArrays = await Promise.all(files.map(readCsvFile));
+      const importedEvents = importedArrays.flat();
+      if (importedEvents.length > 0) {
+        setEvents((prevEvents) => [...prevEvents, ...importedEvents]);
+        setLoadedCsvFiles(files.map((file) => file.name));
+        setImportedEventCount((count) => count + importedEvents.length);
+
+        const firstDate = importedEvents[0].date.split('-');
+        if (firstDate.length === 3) {
+          setCurrentMonth(new Date(Number(firstDate[0]), Number(firstDate[1]) - 1, 1));
+          setSelectedDate(new Date(Number(firstDate[0]), Number(firstDate[1]) - 1, Number(firstDate[2])));
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -108,21 +247,24 @@ function MainCalendar({ onLogout }) {
   const getEventsForDate = (date) => {
     if (!date) return [];
     const dateStr = date.toISOString().split('T')[0];
-    return sampleEvents.filter(event => event.date === dateStr);
+    return events.filter(event => event.date === dateStr);
   };
 
   const getTodaysEvents = () => {
     const dateStr = selectedDate.toISOString().split('T')[0];
-    return sampleEvents.filter(event => {
+    return events.filter(event => {
       const matchesDate = event.date === dateStr;
       const matchesCategory = selectedCategory === 'all' || event.category === selectedCategory;
-      return matchesDate && matchesCategory;
+      const matchesSearch = searchTerm.trim() === '' || event.title.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesDate && matchesCategory && matchesSearch;
     });
   };
 
   const formatTime = (time) => {
+    if (!time) return 'All day';
     const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
+    if (!hours || !minutes) return time;
+    const hour = parseInt(hours, 10);
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour % 12 || 12;
     return `${displayHour}:${minutes} ${ampm}`;
@@ -168,6 +310,31 @@ function MainCalendar({ onLogout }) {
             />
             <button className="hero-search-btn">Search</button>
           </div>
+        </div>
+      </section>
+
+      <section className="csv-upload-section">
+        <div className="upload-card">
+          <div>
+            <h3>Load events from CSV</h3>
+            <p>Choose a CSV file with Date, Title, Time, and URL columns to show events on the calendar.</p>
+          </div>
+          <label className="csv-upload-label">
+            Select CSV files
+            <input
+              type="file"
+              accept=".csv"
+              multiple
+              onChange={handleFileUpload}
+              className="csv-upload-input"
+            />
+          </label>
+          {loadedCsvFiles.length > 0 && (
+            <div className="csv-upload-info">
+              <p className="csv-upload-text">Loaded files: {loadedCsvFiles.join(', ')}</p>
+              <p className="csv-upload-text">Imported events: {importedEventCount}</p>
+            </div>
+          )}
         </div>
       </section>
 

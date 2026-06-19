@@ -134,6 +134,49 @@
   border-bottom: 1px solid #e5e5e7;
 }
 
+.csv-upload-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px 32px;
+}
+
+.upload-card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.csv-upload-label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 600;
+  color: #1f2937;
+  cursor: pointer;
+}
+
+..csv-upload-input {
+  display: block;
+}
+
+.csv-upload-text {
+  color: #4b5563;
+  font-size: 14px;
+  margin: 0;
+}
+
+.csv-upload-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .category-pills {
   max-width: 1400px;
   margin: 0 auto;
@@ -394,6 +437,8 @@
 .event-category-badge.sports { background: #d1fae5; color: #059669; }
 .event-category-badge.community { background: #dbeafe; color: #2563eb; }
 .event-category-badge.business { background: #e0e7ff; color: #4f46e5; }
+.event-category-badge.imported { background: #d1fae5; color: #047857; }
+.event-dot.imported { background: #047857; }
 
 .event-card-info {
   font-size: 13px;
