@@ -9,6 +9,8 @@ function MainCalendar({ onLogout }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loadedCsvFiles, setLoadedCsvFiles] = useState([]);
   const [importedEventCount, setImportedEventCount] = useState(0);
+  const [uploadedEventCount, setUploadedEventCount] = useState(0);
+  const [duplicateEventsRemoved, setDuplicateEventsRemoved] = useState(0);
 
   const [events, setEvents] = useState([
     {
@@ -203,6 +205,19 @@ function MainCalendar({ onLogout }) {
     });
   };
 
+  const dedupeEvents = (eventList) => {
+    const seen = new Set();
+    return eventList.filter((event) => {
+      const title = event.title?.toString().trim().toLowerCase() || '';
+      const date = event.date?.toString().trim() || '';
+      const time = event.time?.toString().trim() || '';
+      const key = `${title}|${date}|${time}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -211,9 +226,14 @@ function MainCalendar({ onLogout }) {
       const importedArrays = await Promise.all(files.map(readCsvFile));
       const importedEvents = importedArrays.flat();
       if (importedEvents.length > 0) {
-        setEvents((prevEvents) => [...prevEvents, ...importedEvents]);
+        const mergedEvents = dedupeEvents([...events, ...importedEvents]);
+        const removedCount = events.length + importedEvents.length - mergedEvents.length;
+
+        setEvents(mergedEvents);
         setLoadedCsvFiles(files.map((file) => file.name));
-        setImportedEventCount((count) => count + importedEvents.length);
+        setImportedEventCount(mergedEvents.length);
+        setUploadedEventCount(importedEvents.length);
+        setDuplicateEventsRemoved(removedCount);
 
         const firstDate = importedEvents[0].date.split('-');
         if (firstDate.length === 3) {
@@ -332,7 +352,9 @@ function MainCalendar({ onLogout }) {
           {loadedCsvFiles.length > 0 && (
             <div className="csv-upload-info">
               <p className="csv-upload-text">Loaded files: {loadedCsvFiles.join(', ')}</p>
-              <p className="csv-upload-text">Imported events: {importedEventCount}</p>
+              <p className="csv-upload-text">Uploaded events: {uploadedEventCount}</p>
+              <p className="csv-upload-text">Unique events after merge: {importedEventCount}</p>
+              <p className="csv-upload-text">Duplicate events removed: {duplicateEventsRemoved}</p>
             </div>
           )}
         </div>

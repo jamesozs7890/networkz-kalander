@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.db.session import engine
-from app.routers import auth, events, meta
+from app.routers import auth, events, meta, scrape
 from app.services.bootstrap import initialize_database
 
 settings = get_settings()
@@ -31,3 +31,4 @@ def health() -> dict[str, str]:
 app.include_router(auth.router)
 app.include_router(meta.router)
 app.include_router(events.router)
+app.include_router(scrape.router)
