@@ -17,7 +17,7 @@ function BrowsePage({ onLogout, currentUser }) {
         setLoading(true);
         setError('');
 
-        const res = await fetch(`${API_BASE}/events/public?limit=200&upcoming_only=false`);
+        const res = await fetch(`${API_BASE}/events/public?limit=1000&upcoming_only=false`);
 
         if (!res.ok) {
           throw new Error('Failed to fetch public events');

@@ -46,7 +46,7 @@ def _to_joined(event: Event) -> EventJoinedResponse:
 @router.get("/public", response_model=list[EventJoinedResponse])
 def public_events(
     db: Session = Depends(get_db),
-    limit: int = Query(default=100, ge=1, le=500),
+    limit: int = Query(default=1000, ge=1, le=1000),
     upcoming_only: bool = True,
     q: str | None = Query(default=None, alias="q")
 ):
