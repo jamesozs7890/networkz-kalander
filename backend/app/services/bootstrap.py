@@ -18,5 +18,9 @@ def initialize_database(engine: Engine) -> None:
     ]
 
     with engine.begin() as connection:
+        if engine.dialect.name == "sqlite":
+            # SQLite does not support ALTER TABLE ... IF NOT EXISTS with this syntax.
+            # For local testing we rely on create_all() to create the full schema.
+            return
         for statement in statements:
             connection.execute(text(statement))

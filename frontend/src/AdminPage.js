@@ -10,6 +10,8 @@ function AdminPage({ onLogout, currentUser }) {
   const [message, setMessage] = useState("");
   const [token] = useState(localStorage.getItem("token") || "");
   const [loading, setLoading] = useState(false);
+  const [scrapeLoading, setScrapeLoading] = useState(false);
+  const [scrapeResults, setScrapeResults] = useState(null);
 
   const [categories, setCategories] = useState([]);
   const [venues, setVenues] = useState([]);
@@ -59,7 +61,7 @@ function AdminPage({ onLogout, currentUser }) {
       setLoading(true);
       setMessage("");
 
-      const res = await fetch(`${API_BASE}/events?limit=200`, {
+      const res = await fetch(`${API_BASE}/events?limit=1000`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -222,6 +224,37 @@ function AdminPage({ onLogout, currentUser }) {
 
   const pendingCount = events.filter((e) => !e.is_published).length;
 
+  const runScrapers = async (dry) => {
+    if (!token) {
+      setMessage("Admin token missing");
+      return;
+    }
+    setScrapeLoading(true);
+    setScrapeResults(null);
+    setMessage("");
+    try {
+      const url = `${API_BASE}/admin/scrape${dry ? "?dry_run=true" : ""}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || `Request failed ${res.status}`);
+      }
+      const data = await res.json();
+      setScrapeResults(data);
+      setMessage("Scrape completed.");
+      // refresh events after successful run
+      await fetchEvents();
+    } catch (err) {
+      console.error(err);
+      setMessage(`Scrape failed: ${err.message}`);
+    } finally {
+      setScrapeLoading(false);
+    }
+  };
+
   return (
     <div className="admin-page">
       <nav className="admin-top-nav">
@@ -250,12 +283,35 @@ function AdminPage({ onLogout, currentUser }) {
           <button className="admin-refresh-btn" onClick={fetchEvents}>
             Refresh
           </button>
+          <button
+            className="admin-refresh-btn"
+            onClick={() => runScrapers(false)}
+            disabled={!token || scrapeLoading}
+          >
+            Run Scrapers
+          </button>
+          <button
+            className="admin-refresh-btn"
+            onClick={() => runScrapers(true)}
+            disabled={!token || scrapeLoading}
+          >
+            Check CSVs (dry)
+          </button>
           <button className="admin-logout-btn" onClick={onLogout}>
             Logout
           </button>
         </div>
 
         {message && <div className="admin-message">{message}</div>}
+        {scrapeLoading && <div className="admin-message">Running scrapers...</div>}
+        {scrapeResults && (
+          <div className="admin-message">
+            <strong>Scrape results:</strong>
+            <pre style={{ whiteSpace: "pre-wrap", maxHeight: 240, overflow: "auto" }}>
+              {JSON.stringify(scrapeResults, null, 2)}
+            </pre>
+          </div>
+        )}
 
         <div className="admin-main-grid">
           <section className="admin-list-card">
