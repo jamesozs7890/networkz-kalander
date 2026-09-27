@@ -45,7 +45,7 @@ def _to_joined(event: Event) -> EventJoinedResponse:
 @router.get("/public", response_model=list[EventJoinedResponse])
 def public_events(
     db: Session = Depends(get_db),
-    limit: int = Query(default=100, ge=1, le=500),
+    limit: int = Query(default=3000, ge=1, le=3000),
     upcoming_only: bool = True,
 ):
     query = db.query(Event).filter(Event.is_published.is_(True))
@@ -60,7 +60,7 @@ def public_events(
 def all_events(
     db: Session = Depends(get_db),
     _: AppUser = Depends(require_admin),
-    limit: int = Query(default=200, ge=1, le=1000),
+    limit: int = Query(default=3000, ge=1, le=3000),
 ):
     events = db.query(Event).order_by(Event.start_time.asc()).limit(limit).all()
     return [_to_joined(event) for event in events]

@@ -59,7 +59,7 @@ function AdminPage({ onLogout, currentUser }) {
       setLoading(true);
       setMessage("");
 
-      const res = await fetch(`${API_BASE}/events?limit=200`, {
+      const res = await fetch(`${API_BASE}/events?limit=3000`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

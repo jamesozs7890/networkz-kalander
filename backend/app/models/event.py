@@ -19,6 +19,16 @@ class Event(Base):
     category_id: Mapped[int | None] = mapped_column(ForeignKey("categories.id"), nullable=True)
     source_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    scraper_source: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    collected_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True
+    )
+
     created_by: Mapped[int | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
     updated_by: Mapped[int | None] = mapped_column(ForeignKey("app_users.id"), nullable=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="pending")
