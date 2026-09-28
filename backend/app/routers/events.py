@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
-
+from sqlalchemy import or_
 from app.db.session import get_db
 from app.models.category import Category
 from app.models.event import Event
@@ -45,13 +45,21 @@ def _to_joined(event: Event) -> EventJoinedResponse:
 @router.get("/public", response_model=list[EventJoinedResponse])
 def public_events(
     db: Session = Depends(get_db),
-    limit: int = Query(default=3000, ge=1, le=3000),
+    limit: int = Query(default=100, ge=1, le=500),
     upcoming_only: bool = True,
+    q: str | None = Query(default=None, alias="q")
 ):
     query = db.query(Event).filter(Event.is_published.is_(True))
     if upcoming_only:
         from datetime import datetime
         query = query.filter(Event.start_time >= datetime.now())
+    if q:
+        query = query.filter(
+            or_(
+                Event.title.ilike(f"%{q}%"),
+                Event.description.ilike(f"%{q}%")
+            )
+        )
     events = query.order_by(Event.start_time.asc()).limit(limit).all()
     return [_to_joined(event) for event in events]
 
@@ -59,20 +67,26 @@ def public_events(
 @router.get("", response_model=list[EventJoinedResponse])
 def all_events(
     db: Session = Depends(get_db),
-    _: AppUser = Depends(require_admin),
-    limit: int = Query(default=3000, ge=1, le=3000),
+    limit: int = Query(default=200, ge=1, le=1000),
+    q: str | None = Query(default=None, alias="q")
 ):
-    events = db.query(Event).order_by(Event.start_time.asc()).limit(limit).all()
+    query = db.query(Event).order_by(Event.start_time.asc())
+    if q:
+        query = query.filter(
+            or_(
+                Event.title.ilike(f"%{q}%"),
+                Event.description.ilike(f"%{q}%")
+            )
+        )
+    events = query.limit(limit).all()
     return [_to_joined(event) for event in events]
 
 
 @router.get("/{event_id}", response_model=EventResponse)
-def get_event(event_id: int, db: Session = Depends(get_db), current_user: AppUser = Depends(get_current_user)):
+def get_event(event_id: int, db: Session = Depends(get_db)):
     event = db.get(Event, event_id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-    if not current_user.is_admin and not event.is_published and event.created_by != current_user.id:
-        raise HTTPException(status_code=403, detail="Not allowed to view this event")
     return event
 
 
