@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 import "./AdminPage.css";
 
 function AdminPage({ onLogout, currentUser }) {
-  const API_BASE = "http://127.0.0.1:8000";
-
+  const API_BASE = '/api';
   const [events, setEvents] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [message, setMessage] = useState("");
   const [token] = useState(localStorage.getItem("token") || "");
   const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const [categories, setCategories] = useState([]);
   const [venues, setVenues] = useState([]);
@@ -59,7 +59,7 @@ function AdminPage({ onLogout, currentUser }) {
       setLoading(true);
       setMessage("");
 
-      const res = await fetch(`${API_BASE}/events?limit=3000`, {
+      const res = await fetch(`${API_BASE}/events?limit=200`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -88,11 +88,12 @@ function AdminPage({ onLogout, currentUser }) {
   };
 
   useEffect(() => {
-    if (token) {
-      fetchMeta();
-      fetchEvents();
-    }
-  }, [token]);
+  if (token) {
+    fetchMeta();
+    fetchEvents();
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [token]);
 
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedEventId) || null,
@@ -220,6 +221,34 @@ function AdminPage({ onLogout, currentUser }) {
     }
   };
 
+  const handleSync = async () => {
+    try {
+      setSyncing(true);
+      setMessage("");
+
+      const res = await fetch(`${API_BASE}/admin/scrape`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt || "Failed to sync events");
+      }
+
+      const data = await res.json().catch(() => null);
+      setMessage(
+        data?.message || data?.detail || "Scrapers ran successfully. Refreshing events..."
+      );
+      await fetchEvents();
+    } catch (err) {
+      console.error(err);
+      setMessage("Could not sync events from scrapers.");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const pendingCount = events.filter((e) => !e.is_published).length;
 
   return (
@@ -228,7 +257,6 @@ function AdminPage({ onLogout, currentUser }) {
         <div className="admin-brand">KalenderNetz</div>
 
         <div className="admin-nav-links">
-          <Link to="/" className="admin-nav-btn">Home</Link>
           <Link to="/calendar" className="admin-nav-btn">Calendar</Link>
           <Link to="/browse" className="admin-nav-btn">Browse</Link>
           <Link to="/venues" className="admin-nav-btn">Venues</Link>
@@ -247,6 +275,13 @@ function AdminPage({ onLogout, currentUser }) {
         </div>
 
         <div className="admin-token-row">
+          <button
+            className="admin-sync-btn"
+            onClick={handleSync}
+            disabled={syncing}
+          >
+            {syncing ? "Syncing..." : "Sync Events"}
+          </button>
           <button className="admin-refresh-btn" onClick={fetchEvents}>
             Refresh
           </button>

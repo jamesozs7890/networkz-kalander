@@ -18,8 +18,7 @@ function SignUp({ onBackToLogin }) {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const API_BASE = 'http://127.0.0.1:8000';
-
+const API_BASE = '/api';
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 

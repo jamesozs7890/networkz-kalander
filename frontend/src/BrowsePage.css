@@ -211,3 +211,19 @@
     font-size: 14px;
   }
 }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.nav-login-btn {
+  background: none;
+  border: 1px solid #2e7d32;
+  padding: 8px 20px;
+  border-radius: 8px;
+  color: #2e7d32;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+.nav-login-btn:hover { background: #2e7d32; color: white; }
