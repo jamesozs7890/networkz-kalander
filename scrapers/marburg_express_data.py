@@ -5,7 +5,7 @@ import csv
 
 nowDatetime = datetime.datetime.now()
 nowTimestamp = int(nowDatetime.timestamp())
-inFourMonths_timestamp = nowTimestamp + 4*31*24*60*60 # 4 months from now
+inFourMonths_timestamp = nowTimestamp + 12*31*24*60*60
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/148.0',
