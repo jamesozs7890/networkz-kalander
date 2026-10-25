@@ -38,15 +38,16 @@ def import_events(
 
     df = pd.read_csv(csv_file)
 
-    previous_visible_count = (
-        db.query(Event)
-        .filter(
-            Event.scraper_source == scraper_source,
-            Event.created_by.is_(None),
-            Event.is_published.is_(True),
-        )
-        .count()
+   previous_visible_count = (
+    db.query(Event)
+    .filter(
+        Event.scraper_source == scraper_source,
+        Event.created_by.is_(None),
+        Event.is_published.is_(True),
+        Event.start_time >= datetime.now(),
     )
+    .count()
+)
     minimum_count = int(previous_visible_count * minimum_count_ratio)
     if df.empty or (previous_visible_count and len(df) < minimum_count):
         db.close()
