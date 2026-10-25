@@ -82,7 +82,7 @@ data = {
     'cals[evcal_calendar_202][sc][members_only]': 'no',
     'cals[evcal_calendar_202][sc][ml_priority]': 'no',
     'cals[evcal_calendar_202][sc][month_incre]': '0',
-    'cals[evcal_calendar_202][sc][number_of_months]': '1',
+'cals[evcal_calendar_202][sc][number_of_months]': '12',
     'cals[evcal_calendar_202][sc][only_ft]': 'no',
     'cals[evcal_calendar_202][sc][pec]': '',
     'cals[evcal_calendar_202][sc][s]': '',
