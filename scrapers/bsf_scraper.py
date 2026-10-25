@@ -10,7 +10,8 @@ URL = BASE_URL + "/veranstaltungen/index.php"
 print("Downloading main page...")
 
 # Download the webpage
-response = requests.get(URL)
+response = requests.get(URL, timeout=30)
+response.raise_for_status()
 soup = BeautifulSoup(response.text, "html.parser")
 
 events = []
