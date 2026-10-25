@@ -111,7 +111,13 @@ data = {
     'cals[evcal_calendar_202][sc][fixed_day]': '1',
 }
 
-response = requests.post('https://www.marbuch-verlag.de/wp-admin/admin-ajax.php', headers=headers, data=data)
+response = requests.post(
+    'https://www.marbuch-verlag.de/wp-admin/admin-ajax.php',
+    headers=headers,
+    data=data,
+    timeout=30,
+)
+response.raise_for_status()
 
 """
 # to output into a json file, legacy code 
@@ -152,7 +158,7 @@ with open('marburg_events.csv', 'w', newline='', encoding='utf-8') as f:
         event_name = i['event_title']
         event_location =str(i['event_pmv']['evcal_location_name'][0])
         event_type= "Marburg express featured" # marburg express doesnt give event type
-        event_url = "no url provided"
+        event_url = f"https://www.marbuch-verlag.de/events/?event_id={i['event_id']}"
 
         writer.writerow([event_name, event_date, event_type, event_location, event_url])
 
