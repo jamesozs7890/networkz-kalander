@@ -1,3 +1,4 @@
+
 import os
 import subprocess
 import sys
@@ -16,10 +17,7 @@ STEPS = [
     ("bsf import", [sys.executable, "import_bsf.py"]),
     ("marburg express", [sys.executable, "marburg_express_data.py"]),
     ("marburg express import", [sys.executable, "import_marburg.py"]),
-    (
-        "marburg liebe",
-        [sys.executable, "marburgliebe_scraper.py"],
-    ),
+    ("marburg liebe", [sys.executable, "marburgliebe_scraper.py"]),
     ("marburg liebe import", [sys.executable, "import_marburgliebe.py"]),
     ("cafe trauma", [sys.executable, "cafe_trauma_scraper.py"]),
     ("cafe trauma import", [sys.executable, "import_cafe_trauma.py"]),
@@ -29,9 +27,32 @@ STEPS = [
 
 
 def main() -> None:
+    failures = []
+
     for name, command in STEPS:
         print(f"\n=== Running {name} ===", flush=True)
-        subprocess.run(command, cwd=SCRAPERS_DIR, check=True, env=os.environ.copy())
+
+        try:
+            subprocess.run(
+                command,
+                cwd=SCRAPERS_DIR,
+                check=True,
+                env=os.environ.copy(),
+            )
+        except subprocess.CalledProcessError as error:
+            print(
+                f"FAILED: {name} (exit code {error.returncode})",
+                flush=True,
+            )
+            failures.append(name)
+
+    if failures:
+        print(
+            "\nSynchronization finished with failures: "
+            + ", ".join(failures),
+            flush=True,
+        )
+        sys.exit(1)
 
     print("\nEvent synchronization completed.", flush=True)
 
