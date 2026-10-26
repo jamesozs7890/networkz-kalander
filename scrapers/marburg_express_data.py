@@ -5,7 +5,7 @@ import csv
 
 nowDatetime = datetime.datetime.now()
 nowTimestamp = int(nowDatetime.timestamp())
-inFourMonths_timestamp = nowTimestamp + 4*31*24*60*60 # 4 months from now
+inFourMonths_timestamp = nowTimestamp + 12*31*24*60*60
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:148.0) Gecko/20100101 Firefox/148.0',
@@ -55,8 +55,8 @@ data = {
     'cals[evcal_calendar_202][sc][filter_show_set_only]': 'no',
     'cals[evcal_calendar_202][sc][filter_type]': 'default',
     'cals[evcal_calendar_202][sc][filters]': 'yes',
-    'cals[evcal_calendar_202][sc][fixed_month]': '4',
-    'cals[evcal_calendar_202][sc][fixed_year]': '2026',
+    'cals[evcal_calendar_202][sc][fixed_month]': str(nowDatetime.month),
+'cals[evcal_calendar_202][sc][fixed_year]': str(nowDatetime.year),
     'cals[evcal_calendar_202][sc][focus_end_date_range]':str(inFourMonths_timestamp),
     'cals[evcal_calendar_202][sc][focus_start_date_range]': str(nowTimestamp),
     'cals[evcal_calendar_202][sc][ft_event_priority]': 'no',
@@ -82,7 +82,7 @@ data = {
     'cals[evcal_calendar_202][sc][members_only]': 'no',
     'cals[evcal_calendar_202][sc][ml_priority]': 'no',
     'cals[evcal_calendar_202][sc][month_incre]': '0',
-    'cals[evcal_calendar_202][sc][number_of_months]': '1',
+'cals[evcal_calendar_202][sc][number_of_months]': '12',
     'cals[evcal_calendar_202][sc][only_ft]': 'no',
     'cals[evcal_calendar_202][sc][pec]': '',
     'cals[evcal_calendar_202][sc][s]': '',
