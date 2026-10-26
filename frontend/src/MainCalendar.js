@@ -2,6 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './MainCalendar.css';
 
+const API_PAGE_SIZE = 500;
+
+function toLocalDateKey(dateValue) {
+  const d = new Date(dateValue);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function MainCalendar({ onLogout, currentUser }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,14 +22,7 @@ function MainCalendar({ onLogout, currentUser }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE = 'http://127.0.0.1:8000';
-
-  const toLocalDateKey = (dateValue) => {
-    const d = new Date(dateValue);
-    if (Number.isNaN(d.getTime())) return '';
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  };
+  const API_BASE = '/api';
 
   function normalizeCategory(name) {
     const value = String(name || '').toLowerCase();
@@ -36,20 +38,66 @@ function MainCalendar({ onLogout, currentUser }) {
   }
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchPublicEvents = async () => {
       try {
         setLoading(true);
         setError('');
+        setEvents([]);
 
-        const res = await fetch(`${API_BASE}/events/public?limit=3000&upcoming_only=false`);
+        const startDate = new Date(
+          currentMonth.getFullYear(),
+          currentMonth.getMonth(),
+          1
+        );
+        const endDate = new Date(
+          currentMonth.getFullYear(),
+          currentMonth.getMonth() + 1,
+          1
+        );
+        const eventsForMonth = [];
+        let offset = 0;
+        let totalEvents = Infinity;
 
-        if (!res.ok) {
-          throw new Error('Failed to fetch public events');
+        while (offset < totalEvents) {
+          const params = new URLSearchParams({
+            limit: String(API_PAGE_SIZE),
+            offset: String(offset),
+            upcoming_only: 'false',
+            start_date: toLocalDateKey(startDate),
+            end_date: toLocalDateKey(endDate)
+          });
+          const res = await fetch(
+            `${API_BASE}/events/public?${params.toString()}`,
+            { signal: controller.signal }
+          );
+
+          if (!res.ok) {
+            throw new Error('Failed to fetch public events');
+          }
+
+          const page = await res.json();
+          if (!Array.isArray(page)) {
+            throw new Error('The events API returned an invalid response');
+          }
+
+          eventsForMonth.push(...page);
+          const totalHeader = res.headers.get('X-Total-Count');
+          const responseTotal = totalHeader === null ? NaN : Number(totalHeader);
+          totalEvents = Number.isFinite(responseTotal)
+            ? responseTotal
+            : page.length < API_PAGE_SIZE
+              ? offset + page.length
+              : Infinity;
+          offset += page.length;
+
+          if (page.length === 0) {
+            break;
+          }
         }
 
-        const data = await res.json();
-
-        const mappedEvents = (Array.isArray(data) ? data : []).map((event) => {
+        const mappedEvents = eventsForMonth.map((event) => {
           const start = event.start_time ? new Date(event.start_time) : null;
 
           return {
@@ -85,22 +133,20 @@ function MainCalendar({ onLogout, currentUser }) {
         });
 
         setEvents(mappedEvents);
-
-        if (mappedEvents.length > 0 && mappedEvents[0].date) {
-          const firstEventDate = new Date(mappedEvents[0].date);
-          setSelectedDate(firstEventDate);
-          setCurrentMonth(new Date(firstEventDate.getFullYear(), firstEventDate.getMonth(), 1));
-        }
       } catch (err) {
+        if (err.name === 'AbortError') return;
         console.error('Error loading public events:', err);
         setError('Could not load events from the backend.');
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchPublicEvents();
-  }, []);
+    return () => controller.abort();
+  }, [currentMonth]);
 
   const categories = [
     { id: 'all', name: 'All Events' },
@@ -183,6 +229,20 @@ function MainCalendar({ onLogout, currentUser }) {
   const days = getDaysInMonth(currentMonth);
   const selectedDateEvents = getSelectedDateEvents();
 
+  const changeMonth = (monthOffset) => {
+    const nextMonth = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + monthOffset,
+      1
+    );
+    const day = Math.min(
+      selectedDate.getDate(),
+      new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate()
+    );
+    setCurrentMonth(nextMonth);
+    setSelectedDate(new Date(nextMonth.getFullYear(), nextMonth.getMonth(), day));
+  };
+
   return (
     <div className="calendar-page-new">
       <nav className="top-nav">
@@ -246,9 +306,7 @@ function MainCalendar({ onLogout, currentUser }) {
             <div className="calendar-nav-btns">
               <button
                 className="calendar-nav-btn"
-                onClick={() =>
-                  setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))
-                }
+                onClick={() => changeMonth(-1)}
               >
                 ←
               </button>
@@ -266,9 +324,7 @@ function MainCalendar({ onLogout, currentUser }) {
 
               <button
                 className="calendar-nav-btn"
-                onClick={() =>
-                  setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))
-                }
+                onClick={() => changeMonth(1)}
               >
                 →
               </button>

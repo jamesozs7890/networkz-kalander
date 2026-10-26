@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 120
     cors_origins: List[str] | str = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    github_token: str | None = None
+    github_repository: str = "jamesozs7890/networkz-kalander"
+    github_workflow: str = "event-sync.yml"
+    github_ref: str = "main"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 

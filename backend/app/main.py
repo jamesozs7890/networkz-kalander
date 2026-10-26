@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.db.session import engine
-from app.routers import auth, events, meta
+from app.routers import admin, auth, events, meta
 from app.services.bootstrap import initialize_database
 
 settings = get_settings()
@@ -24,10 +24,11 @@ def on_startup() -> None:
 
 
 @app.get("/health")
+@app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-app.include_router(auth.router)
-app.include_router(meta.router)
-app.include_router(events.router)
+for router in (auth.router, meta.router, events.router, admin.router):
+    app.include_router(router)
+    app.include_router(router, prefix="/api")

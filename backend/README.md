@@ -17,6 +17,9 @@ Minimal FastAPI backend for your manual PostgreSQL database.
 - `GET /meta/categories`
 - `GET /meta/venues`
 - `GET /meta/organizations`
+- `POST /admin/scrape` → admin-only dispatch of the GitHub Actions scraper workflow
+
+All API routes are also available under the `/api` prefix for the frontend.
 
 ## Important
 Your current `events` table does not contain workflow/auth columns. On startup, this backend adds them if missing:
@@ -57,3 +60,20 @@ UPDATE app_users
 SET is_admin = TRUE
 WHERE email = 'your-admin-email@example.com';
 ```
+
+## Admin scraper sync
+
+The admin dashboard starts the existing GitHub Actions workflow; it does not
+run scrapers inside the API server. Configure these backend environment
+variables:
+
+- `GITHUB_TOKEN`: a fine-grained token with access to this repository and
+  **Actions: write** permission
+- `GITHUB_REPOSITORY`: repository in `owner/name` format (defaults to
+  `jamesozs7890/networkz-kalander`)
+- `GITHUB_WORKFLOW`: workflow file name (defaults to `event-sync.yml`)
+- `GITHUB_REF`: branch to run (defaults to `main`)
+
+The workflow also requires the `DATABASE_URL` GitHub Actions secret. The API
+returns an error in the admin dashboard if dispatch is not configured or GitHub
+rejects the request.
