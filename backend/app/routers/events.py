@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from datetime import date, datetime, time
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from app.db.session import get_db
@@ -44,14 +46,26 @@ def _to_joined(event: Event) -> EventJoinedResponse:
 
 @router.get("/public", response_model=list[EventJoinedResponse])
 def public_events(
+    response: Response,
     db: Session = Depends(get_db),
     limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     upcoming_only: bool = True,
+    start_date: date | None = None,
+    end_date: date | None = None,
     q: str | None = Query(default=None, alias="q")
 ):
     query = db.query(Event).filter(Event.is_published.is_(True))
+    if start_date and end_date and end_date <= start_date:
+        raise HTTPException(
+            status_code=422,
+            detail="end_date must be later than start_date",
+        )
+    if start_date:
+        query = query.filter(Event.start_time >= datetime.combine(start_date, time.min))
+    if end_date:
+        query = query.filter(Event.start_time < datetime.combine(end_date, time.min))
     if upcoming_only:
-        from datetime import datetime
         query = query.filter(Event.start_time >= datetime.now())
     if q:
         query = query.filter(
@@ -60,17 +74,25 @@ def public_events(
                 Event.description.ilike(f"%{q}%")
             )
         )
-    events = query.order_by(Event.start_time.asc()).limit(limit).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    events = (
+        query.order_by(Event.start_time.asc(), Event.id.asc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     return [_to_joined(event) for event in events]
 
 
 @router.get("", response_model=list[EventJoinedResponse])
 def all_events(
+    response: Response,
     db: Session = Depends(get_db),
     limit: int = Query(default=200, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
     q: str | None = Query(default=None, alias="q")
 ):
-    query = db.query(Event).order_by(Event.start_time.asc())
+    query = db.query(Event)
     if q:
         query = query.filter(
             or_(
@@ -78,7 +100,8 @@ def all_events(
                 Event.description.ilike(f"%{q}%")
             )
         )
-    events = query.limit(limit).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    events = query.order_by(Event.start_time.asc()).offset(offset).limit(limit).all()
     return [_to_joined(event) for event in events]
 
 

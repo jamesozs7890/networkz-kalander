@@ -9,7 +9,7 @@ import OrganizationsPage from './OrganizationsPage';
 import AdminPage from './AdminPage';
 import SubmitEventPage from './SubmitEventPage';
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = '/api';
 
 function App() {
   const [email, setEmail] = useState('');

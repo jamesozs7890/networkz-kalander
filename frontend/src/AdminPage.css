@@ -168,6 +168,35 @@
   padding-right: 6px;
 }
 
+.admin-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: #687385;
+  font-size: 12px;
+}
+
+.admin-pagination div {
+  display: flex;
+  gap: 6px;
+}
+
+.admin-pagination button {
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+}
+
+.admin-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .admin-event-item {
   width: 100%;
   text-align: left;

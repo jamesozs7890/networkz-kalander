@@ -3,8 +3,11 @@ import { Link } from "react-router-dom";
 import "./AdminPage.css";
 
 function AdminPage({ onLogout, currentUser }) {
+  const PAGE_SIZE = 200;
   const API_BASE = '/api';
   const [events, setEvents] = useState([]);
+  const [totalEvents, setTotalEvents] = useState(0);
+  const [eventOffset, setEventOffset] = useState(0);
   const [selectedEventId, setSelectedEventId] = useState(null);
   const [message, setMessage] = useState("");
   const [token] = useState(localStorage.getItem("token") || "");
@@ -54,12 +57,12 @@ function AdminPage({ onLogout, currentUser }) {
     }
   };
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (offset = eventOffset) => {
     try {
       setLoading(true);
       setMessage("");
 
-      const res = await fetch(`${API_BASE}/events?limit=200`, {
+      const res = await fetch(`${API_BASE}/events?limit=${PAGE_SIZE}&offset=${offset}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -69,6 +72,15 @@ function AdminPage({ onLogout, currentUser }) {
 
       const data = await res.json();
       const safeData = Array.isArray(data) ? data : [];
+      const total = Number(res.headers.get("X-Total-Count"));
+      setTotalEvents(Number.isFinite(total) ? total : safeData.length);
+      if (safeData.length === 0 && offset > 0) {
+        const previousOffset = Math.max(0, offset - PAGE_SIZE);
+        setEventOffset(previousOffset);
+        await fetchEvents(previousOffset);
+        return;
+      }
+      setEventOffset(offset);
       setEvents(safeData);
 
       if (safeData.length > 0) {
@@ -85,6 +97,11 @@ function AdminPage({ onLogout, currentUser }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const changeEventPage = (nextOffset) => {
+    setSelectedEventId(null);
+    fetchEvents(nextOffset);
   };
 
   useEffect(() => {
@@ -186,9 +203,7 @@ function AdminPage({ onLogout, currentUser }) {
       }
 
       setMessage("Event deleted.");
-      const remaining = events.filter((e) => e.id !== selectedEventId);
-      setEvents(remaining);
-      setSelectedEventId(remaining[0]?.id || null);
+      await fetchEvents();
     } catch (err) {
       console.error(err);
       setMessage("Could not delete event.");
@@ -232,8 +247,8 @@ function AdminPage({ onLogout, currentUser }) {
       });
 
       if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(txt || "Failed to sync events");
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.detail || "Failed to sync events");
       }
 
       const data = await res.json().catch(() => null);
@@ -243,7 +258,7 @@ function AdminPage({ onLogout, currentUser }) {
       await fetchEvents();
     } catch (err) {
       console.error(err);
-      setMessage("Could not sync events from scrapers.");
+      setMessage(err.message || "Could not sync events from scrapers.");
     } finally {
       setSyncing(false);
     }
@@ -270,7 +285,7 @@ function AdminPage({ onLogout, currentUser }) {
         <div className="admin-hero">
           <h1>Admin Dashboard</h1>
           <p>
-            Welcome {currentUser?.username || "admin"}. Pending submissions: {pendingCount}
+            Welcome {currentUser?.username || "admin"}. Pending on this page: {pendingCount}
           </p>
         </div>
 
@@ -296,7 +311,7 @@ function AdminPage({ onLogout, currentUser }) {
           <section className="admin-list-card">
             <div className="admin-card-header">
               <h2>All Events</h2>
-              <span className="admin-count-pill">{events.length} total</span>
+              <span className="admin-count-pill">{totalEvents} total</span>
             </div>
 
             <div className="admin-event-list">
@@ -333,6 +348,29 @@ function AdminPage({ onLogout, currentUser }) {
                   </button>
                 ))
               )}
+            </div>
+            <div className="admin-pagination">
+              <span>
+                {totalEvents === 0
+                  ? "No events"
+                  : `Showing ${eventOffset + 1}-${Math.min(eventOffset + events.length, totalEvents)} of ${totalEvents}`}
+              </span>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => changeEventPage(Math.max(0, eventOffset - PAGE_SIZE))}
+                  disabled={loading || eventOffset === 0}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => changeEventPage(eventOffset + PAGE_SIZE)}
+                  disabled={loading || eventOffset + events.length >= totalEvents}
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </section>
 
